@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 29
 __lua__
 menuitem(1,"practice mod",function()
-  -- define room, checkpt pairs
+  -- define rooms (level, checkpt, name)
   rooms={
     {1,nil,"1-1"},
     {2,nil,"2-1"},
@@ -26,7 +26,7 @@ menuitem(1,"practice mod",function()
     {8,nil,"8-1"}
   }
 
-  -- current room
+  -- current room, mode
   rm_index=1
 
   -- override update
@@ -34,6 +34,10 @@ menuitem(1,"practice mod",function()
   function _update()
     -- reset fruits etc
     collected,berry_count,death_count={},0,0
+    -- checkpt mode
+    if btnp(2,1) then
+      cp_mode=not cp_mode
+    end
     -- scroll through levels
     for i=0,1 do
       if btnp(i,1) then
@@ -96,9 +100,24 @@ menuitem(1,"practice mod",function()
     _player_die(self)
   end
 
+  -- define checkpoint.update (for checkpt mode)
+  function checkpoint.update(self)
+    if not cp_mode or self.id==rooms[rm_index][2] then return end
+    for o in all(objects) do  
+      if o.base==player and self:overlaps(o) then
+        next_level()
+      end
+    end
+  end
+
+  -- rectfill relative to camera
+  function crectfill(x1,y1,x2,y2,c)
+    rectfill(camera_x+x1,camera_y+y1,camera_x+x2,camera_y+y2,c)
+  end
+
   -- draw button
   function draw_button(x,y,b)
-    rectfill(camera_x+x,camera_y+y,camera_x+x+2,camera_y+y+2,btn(b) and 7 or 1)
+    crectfill(x,y,x+2,y+2,btn(b) and 7 or 1)
   end
 
   -- override draw (practice hud)
@@ -106,21 +125,25 @@ menuitem(1,"practice mod",function()
   function _draw()
     __draw()
     -- level title
-    rectfill(camera_x+2,camera_y+2,camera_x+14,camera_y+8,0)
+    crectfill(2,2,14,8,0)
     ?rooms[rm_index][3],camera_x+3,camera_y+3,10
     -- draw frame counter
-    rectfill(camera_x+16,camera_y+2,camera_x+32,camera_y+8,0)
+    crectfill(16,2,32,8,0)
     local t=level_time and level_time or last_time
     ?sub('000',1,4-#tostr(t)),camera_x+17,camera_y+3,1
     ?t,camera_x+33-4*#tostr(t),camera_y+3,7
     -- draw input display
-    rectfill(camera_x+34,camera_y+2,camera_x+55,camera_y+10,0)
+    crectfill(34,2,55,10,0)
     draw_button(44,7,0) -- l
     draw_button(52,7,1) -- r
     draw_button(48,3,2) -- u
     draw_button(48,7,3) -- d
     draw_button(35,7,4) -- z
     draw_button(39,7,5) -- x
+    -- draw cp mode indicator
+    crectfill(57,2,65,10,0)
+    crectfill(58,3,58,9,cp_mode and 4 or 1)
+    crectfill(59,3,64,6,cp_mode and 11 or 1)
   end
 
   -- reinitialize
