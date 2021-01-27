@@ -3,7 +3,7 @@ version 29
 __lua__
 menuitem(1,"practice mod",function()
   -- define rooms (level, checkpt, name)
-  rooms={
+  rooms,rm_index={
     {1,nil,"1-1"},
     {2,nil,"2-1"},
     {3,nil,"3-1"},
@@ -24,10 +24,38 @@ menuitem(1,"practice mod",function()
     {7,1624,"7-2"},
     {7,2162,"7-3"},
     {8,nil,"8-1"}
-  }
+  },1
 
-  -- current room, mode
-  rm_index=1
+  -- override tile_at to use cached map
+  function tile_at(x,y)
+    return x<0 or y<0 or x>=level.width or y>=level.height and 0 or level.map[x+y*level.width]
+  end
+
+  -- cache map
+  for l=1,8 do
+    level=levels[l]
+    level.map,level.tiles={},{}
+    px9_decomp(0,0,0x1000+level.offset,function(x,y) return level.map[x+y*level.width] end, function(x,y,v) level.map[x+y*level.width]=v end)
+    for i=0,level.width-1 do
+      for j=0,level.height-1 do
+        local t=types[tile_at(i,j)]
+        if t then
+          add(level.tiles,{t,i*8,j*8})
+        end
+      end
+    end
+  end
+
+  -- override goto_level to not decompress map (and stuff level intros)
+  function goto_level(index)
+    level,level_index=levels[index],index
+    if level_index==2 then psfx(17,8,16) end
+    if current_music~=level.music and level.music then
+      current_music=level.music
+      music(level.music)
+    end
+    restart_level()
+  end
 
   -- override update
   __update=_update
@@ -57,25 +85,28 @@ menuitem(1,"practice mod",function()
     __update()
   end
 
-  -- override init (skip title screen)
-  __init=_init
-  function _init()
-    __init()
-    goto_level(rm_index)
-  end
-
   -- override next_level (loop level)
   function next_level()
     reset_frame_count(level_time)
     goto_level(level_index)
   end
 
-  -- override restart_level (remove intros, buffer window)
+  -- override restart_level (buffer window, load cached tiles)
   _restart_level=restart_level
   function restart_level()
-    level_intro,level_checkpoint=0,rooms[rm_index][2]
-    _restart_level()
-    buffer_time=5
+    level_checkpoint,buffer_time,
+    camera_x,camera_y,camera_target_x,camera_target_y,
+    objects,
+    infade,have_grapple,sfx_timer=
+    rooms[rm_index][2],10,
+    0,0,0,0,
+    {},
+    0,level_index>2,0
+    for o in all(level.tiles) do
+      if not level_checkpoint or o[1]~=player then
+        create(o[1],o[2],o[3])
+      end
+    end
   end
 
   -- stuff draw_time
@@ -102,52 +133,47 @@ menuitem(1,"practice mod",function()
 
   -- define checkpoint.update (for checkpt mode)
   function checkpoint.update(self)
-    if not cp_mode or self.id==rooms[rm_index][2] then return end
-    for o in all(objects) do  
-      if o.base==player and self:overlaps(o) then
+    -- ideally check cp_mode out of the loop but tokens :(
+    for o in all(objects) do
+      if cp_mode and self.id~=rooms[rm_index][2] and o.base==player and self:overlaps(o) then
         next_level()
       end
     end
-  end
-
-  -- rectfill relative to camera
-  function crectfill(x1,y1,x2,y2,c)
-    rectfill(camera_x+x1,camera_y+y1,camera_x+x2,camera_y+y2,c)
-  end
-
-  -- draw button
-  function draw_button(x,y,b)
-    crectfill(x,y,x+2,y+2,btn(b) and 7 or 1)
   end
 
   -- override draw (practice hud)
   __draw=_draw
   function _draw()
     __draw()
+    -- nab camera
+    camera()
+    -- buffer window
+    if buffer_time>0 then cls() end
     -- level title
-    crectfill(2,2,14,8,0)
-    ?rooms[rm_index][3],camera_x+3,camera_y+3,10
+    rectfill(2,2,14,8,0)
+    ?rooms[rm_index][3],3,3,10
     -- draw frame counter
-    crectfill(16,2,32,8,0)
-    local t=level_time and level_time or last_time
-    ?sub('000',1,4-#tostr(t)),camera_x+17,camera_y+3,1
-    ?t,camera_x+33-4*#tostr(t),camera_y+3,7
+    rectfill(16,2,32,8,0)
+    local t=(buffer_time>0 or not level_time) and last_time or level_time
+    ?sub('000',1,4-#tostr(t)),17,3,1
+    ?t,33-4*#tostr(t),3,7
     -- draw input display
-    crectfill(34,2,55,10,0)
-    draw_button(44,7,0) -- l
-    draw_button(52,7,1) -- r
-    draw_button(48,3,2) -- u
-    draw_button(48,7,3) -- d
-    draw_button(35,7,4) -- z
-    draw_button(39,7,5) -- x
+    rectfill(34,2,55,10,0)
+    for b,x in pairs({44,52,48,48,35,39}) do
+      local y=b==3 and 3 or 7
+      rectfill(x,y,x+2,y+2,btn(b-1) and 7 or 1)
+    end
     -- draw cp mode indicator
-    crectfill(57,2,65,10,0)
-    crectfill(58,3,58,9,cp_mode and 4 or 1)
-    crectfill(59,3,64,6,cp_mode and 11 or 1)
+    rectfill(57,2,65,10,0)
+    rectfill(58,3,58,9,cp_mode and 4 or 1)
+    rectfill(59,3,64,6,cp_mode and 11 or 1)
+    -- give cam back
+    camera(camera_x,camera_y)
   end
 
   -- reinitialize
-  _init()
+  game_start()
+  goto_level(1)
 
   -- remove menu item
   menuitem(1)
