@@ -4,5 +4,5 @@ Injectable practice mod accessible through the pause menu. A token-optimized car
 
 # Controls
 
-E - Toggle ending on checkpoints
-S/F - Previous/next section
+* E - Toggle ending on checkpoints
+* S/F - Previous/next section
