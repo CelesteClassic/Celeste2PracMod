@@ -4,4 +4,4 @@ Injectable practice mod accessible through the pause menu. A token-optimized car
 
 # Controls
 
-S/F - Previous/next section (room/checkpt pair)
+S/F - Previous/next section
