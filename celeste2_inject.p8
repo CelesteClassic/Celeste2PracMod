@@ -93,7 +93,7 @@ menuitem(1,"practice mod",function()
   -- override next_level (loop level)
   function next_level()
     reset_frame_count(level_time)
-    goto_level(level_index)
+    restart_level()--goto_level(level_index)
   end
 
   -- override restart_level (buffer window, load cached tiles)
@@ -134,11 +134,12 @@ menuitem(1,"practice mod",function()
     _player_die(self)
   end
 
-  -- define checkpoint.update (for checkpt mode)
-  function checkpoint.update(self)
-    -- ideally check cp_mode out of the loop but tokens :(
+  -- override player.update (for checkpt mode)
+  _player_update=player.update
+  function player.update(self)
+    _player_update(self)
     for o in all(objects) do
-      if cp_mode and self.id~=get_rm_data(2) and o.base==player and self:overlaps(o) then
+      if cp_mode and o.base==checkpoint and o.id~=get_rm_data(2) and self:overlaps(o) then
         next_level()
       end
     end
