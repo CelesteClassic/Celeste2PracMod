@@ -8,3 +8,5 @@ Injectable practice mod accessible through the pause menu. A token-optimized car
 
 * E - Toggle ending on checkpoints
 * S/F - Previous/next section
+* F6 - Take screenshot
+* F9 - Save GIF of last 8 seconds
