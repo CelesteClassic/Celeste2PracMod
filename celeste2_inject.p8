@@ -3,28 +3,33 @@ version 29
 __lua__
 menuitem(1,"practice mod",function()
   -- define rooms (level, checkpt, name)
-  rooms,rm_index={
-    {1,nil,"1-1"},
-    {2,nil,"2-1"},
-    {3,nil,"3-1"},
-    {3,2900,"3-2"},
-    {4,nil,"4-1"},
-    {4,4290,"4-2"},
-    {4,2274,"4-3"},
-    {4,1011,"4-4"},
-    {4,4340,"4-5"},
-    {4,3202,"4-6"},
-    {5,nil,"5-1"},
-    {5,1867,"5-2"},
-    {6,nil,"6-1"},
-    {6,1659,"6-2"},
-    {6,1828,"6-3"},
-    {6,1854,"6-4"},
-    {7,nil,"7-1"},
-    {7,1624,"7-2"},
-    {7,2162,"7-3"},
-    {8,nil,"8-1"}
-  },1
+  rm_data,rm_index={
+    "1,?,0-1",
+    "2,?,0-2",
+    "3,?,1-1",
+    "3,2900,1-1b",
+    "4,?,2-1",
+    "4,4290,2-1b",
+    "4,2274,2-1c",
+    "4,1011,2-1d",
+    "4,4340,2-1e",
+    "4,3202,2-1f",
+    "5,?,3-1",
+    "5,1867,3-1b",
+    "6,?,3-2",
+    "6,1659,3-2b",
+    "6,1828,3-2c",
+    "6,1858,3-2d",
+    "7,?,3-3",
+    "7,1624,3-3b",
+    "7,2162,3-3c",
+    "8,?,4-1"},1
+
+  -- retrieve room data
+  function get_rm_data(k)
+    local data=split(rm_data[rm_index])[k]
+    if k==2 then return tonum(data) else return data end
+  end
 
   -- override tile_at to use cached map
   function tile_at(x,y)
@@ -70,8 +75,8 @@ menuitem(1,"practice mod",function()
     for i=0,1 do
       if btnp(i,1) then
         reset_frame_count(0)
-        rm_index=clamp(rm_index+2*i-1,1,#rooms)
-        goto_level(rooms[rm_index][1])
+        rm_index=clamp(rm_index+2*i-1,1,#rm_data)
+        goto_level(get_rm_data(1))
       end
     end
     -- timer
@@ -96,12 +101,10 @@ menuitem(1,"practice mod",function()
   function restart_level()
     level_checkpoint,buffer_time,
     camera_x,camera_y,camera_target_x,camera_target_y,
-    objects,
-    infade,have_grapple,sfx_timer=
-    rooms[rm_index][2],10,
+    objects,infade,have_grapple,sfx_timer=
+    get_rm_data(2),10,
     0,0,0,0,
-    {},
-    0,level_index>2,0
+    {},0,level_index>2,0
     for o in all(level.tiles) do
       if not level_checkpoint or o[1]~=player then
         create(o[1],o[2],o[3])
@@ -135,7 +138,7 @@ menuitem(1,"practice mod",function()
   function checkpoint.update(self)
     -- ideally check cp_mode out of the loop but tokens :(
     for o in all(objects) do
-      if cp_mode and self.id~=rooms[rm_index][2] and o.base==player and self:overlaps(o) then
+      if cp_mode and self.id~=get_rm_data(2) and o.base==player and self:overlaps(o) then
         next_level()
       end
     end
@@ -150,23 +153,23 @@ menuitem(1,"practice mod",function()
     -- buffer window
     if buffer_time>0 then cls() end
     -- level title
-    rectfill(2,2,14,8,0)
-    ?rooms[rm_index][3],3,3,10
+    rectfill(2,2,18,8,0)
+    ?get_rm_data(3),3,3,10
     -- draw frame counter
-    rectfill(16,2,32,8,0)
+    rectfill(20,2,36,8,0)
     local t=(buffer_time>0 or not level_time) and last_time or level_time
-    ?sub('000',1,4-#tostr(t)),17,3,1
-    ?t,33-4*#tostr(t),3,7
+    ?sub('000',1,4-#tostr(t)),21,3,1
+    ?t,37-4*#tostr(t),3,7
     -- draw input display
-    rectfill(34,2,55,10,0)
-    for b,x in pairs({44,52,48,48,35,39}) do
+    rectfill(38,2,59,10,0)
+    for b,x in pairs({48,56,52,52,39,43}) do
       local y=b==3 and 3 or 7
       rectfill(x,y,x+2,y+2,btn(b-1) and 7 or 1)
     end
     -- draw cp mode indicator
-    rectfill(57,2,65,10,0)
-    rectfill(58,3,58,9,cp_mode and 4 or 1)
-    rectfill(59,3,64,6,cp_mode and 11 or 1)
+    rectfill(61,2,69,10,0)
+    rectfill(62,3,62,9,cp_mode and 4 or 1)
+    rectfill(63,3,68,6,cp_mode and 11 or 1)
     -- give cam back
     camera(camera_x,camera_y)
   end
@@ -178,10 +181,3 @@ menuitem(1,"practice mod",function()
   -- remove menu item
   menuitem(1)
 end)
-__gfx__
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
