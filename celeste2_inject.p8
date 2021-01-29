@@ -3,31 +3,42 @@ version 29
 __lua__
 menuitem(1,"practice mod",function()
   -- define rooms (level, checkpt, name)
-  rm_data,rm_index={
-    "1,?,0-1",
-    "2,?,0-2",
-    "3,?,1-1",
-    "3,2900,1-1b",
-    "4,?,2-1",
-    "4,4290,2-1b",
-    "4,2274,2-1c",
-    "4,1011,2-1d",
-    "4,4340,2-1e",
-    "4,3202,2-1f",
-    "5,?,3-1",
-    "5,1867,3-1b",
-    "6,?,3-2",
-    "6,1659,3-2b",
-    "6,1828,3-2c",
-    "6,1858,3-2d",
-    "7,?,3-3",
-    "7,1624,3-3b",
-    "7,2162,3-3c",
-    "8,?,4-1"},1
+  rm_data,rm_index="\
+    1,?,0-1,\
+    2,?,0-2,\
+    3,?,1-1,\
+    3,1863,1-1b,\
+    3,2900,1-1c,\
+    3,2791,1-1d,\
+    3,1671,1-1e,\
+    4,?,2-1,\
+    4,834,2-1b,\
+    4,3501,2-1c,\
+    4,2717,2-1d,\
+    4,4290,2-1e,\
+    4,3666,2-1f,\
+    4,4194,2-1g,\
+    4,2274,2-1h,\
+    4,860,2-1i,\
+    4,1011,2-1j,\
+    4,4340,2-1k,\
+    4,3202,2-1l,\
+    5,?,3-1,\
+    5,1867,3-1b,\
+    6,?,3-2,\
+    6,1659,3-2b,\
+    6,1828,3-2c,\
+    6,1854,3-2d,\
+    6,1858,3-2e,\
+    7,?,3-3,\
+    7,1624,3-3b,\
+    7,2162,3-3c,\
+    7,2340,3-3d,\
+    8,?,4-1",0
 
   -- retrieve room data
   function get_rm_data(k)
-    local data=split(rm_data[rm_index])[k]
+    local data=split(rm_data)[3*rm_index+k]
     if k==2 then return tonum(data) else return data end
   end
 
@@ -62,40 +73,6 @@ menuitem(1,"practice mod",function()
     restart_level()
   end
 
-  -- override update
-  __update=_update
-  function _update()
-    -- reset fruits etc
-    collected,berry_count,death_count={},0,0
-    -- checkpt mode
-    if btnp(2,1) then
-      cp_mode=not cp_mode
-    end
-    -- scroll through levels
-    for i=0,1 do
-      if btnp(i,1) then
-        reset_frame_count(0)
-        rm_index=clamp(rm_index+2*i-1,1,#rm_data)
-        goto_level(get_rm_data(1))
-      end
-    end
-    -- timer
-    if buffer_time>0 then
-      buffer_time-=1
-      return
-    end
-    if level_time and level_time<9999 then
-      level_time+=1
-    end
-    __update()
-  end
-
-  -- override next_level (loop level)
-  function next_level()
-    reset_frame_count(level_time)
-    restart_level()--goto_level(level_index)
-  end
-
   -- override restart_level (buffer window, load cached tiles)
   _restart_level=restart_level
   function restart_level()
@@ -110,6 +87,13 @@ menuitem(1,"practice mod",function()
         create(o[1],o[2],o[3])
       end
     end
+    level_time=0
+  end
+
+  -- override next_level (loop level)
+  function next_level()
+    reset_frame_count(level_time)
+    restart_level()
   end
 
   -- stuff draw_time
@@ -118,13 +102,6 @@ menuitem(1,"practice mod",function()
   -- timer management
   function reset_frame_count(last)
     last_time,level_time=last,nil
-  end
-
-  -- override player.init (start timer)
-  _player_init=player.init
-  function player.init(self)
-    level_time=0
-    _player_init(self)
   end
 
   -- override player.die (freeze timer)
@@ -143,6 +120,34 @@ menuitem(1,"practice mod",function()
         next_level()
       end
     end
+  end
+
+  -- override update
+  __update=_update
+  function _update()
+    -- reset fruits etc
+    collected,berry_count,death_count={},0,0
+    -- checkpt mode
+    if btnp(2,1) then
+      cp_mode=not cp_mode
+    end
+    -- scroll through levels
+    for i=0,1 do
+      if btnp(i,1) then
+        reset_frame_count(0)
+        rm_index=btn(4,1) and ({0,1,2,7,19,21,26,30})[mid(level_index+2*i-1,1,8)] or mid(rm_index+2*i-1,0,30)--#split(rm_data)/3)
+        goto_level(get_rm_data(1))
+      end
+    end
+    -- timer
+    if buffer_time>0 then
+      buffer_time-=1
+      return
+    end
+    if level_time and level_time<9999 then
+      level_time+=1
+    end
+    __update()
   end
 
   -- override draw (practice hud)
