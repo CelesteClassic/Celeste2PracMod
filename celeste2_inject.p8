@@ -134,8 +134,9 @@ menuitem(1,"practice mod",function()
     -- scroll through levels
     for i=0,1 do
       if btnp(i,1) then
+        local d=2*i-1
         reset_frame_count(0)
-        rm_index=btn(4,1) and ({0,1,2,7,19,21,26,30})[mid(level_index+2*i-1,1,8)] or mid(rm_index+2*i-1,0,30)--#split(rm_data)/3)
+        rm_index=btn(4,1) and ({0,1,2,7,19,21,26,30})[mid(level_index+d,1,8)] or mid(rm_index+d,0,30)
         goto_level(get_rm_data(1))
       end
     end
