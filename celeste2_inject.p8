@@ -2,43 +2,43 @@ pico-8 cartridge // http://www.pico-8.com
 version 29
 __lua__
 menuitem(1,"practice mod",function()
-  -- define rooms (level, checkpt, name)
-  rm_data,rm_index="\
-    1,?,0-1,\
-    2,?,0-2,\
-    3,?,1-1,\
-    3,1863,1-1b,\
-    3,2900,1-1c,\
-    3,2791,1-1d,\
-    3,1671,1-1e,\
-    4,?,2-1,\
-    4,834,2-1b,\
-    4,3501,2-1c,\
-    4,2717,2-1d,\
-    4,4290,2-1e,\
-    4,3666,2-1f,\
-    4,4194,2-1g,\
-    4,2274,2-1h,\
-    4,860,2-1i,\
-    4,1011,2-1j,\
-    4,4340,2-1k,\
-    4,3202,2-1l,\
-    5,?,3-1,\
-    5,1867,3-1b,\
-    6,?,3-2,\
-    6,1659,3-2b,\
-    6,1828,3-2c,\
-    6,1854,3-2d,\
-    6,1858,3-2e,\
-    7,?,3-3,\
-    7,1624,3-3b,\
-    7,2162,3-3c,\
-    7,2340,3-3d,\
-    8,?,4-1",0
+  -- define rooms (level, checkpt, name, checkpt_num)
+  rm_data,rm_index,cp_mode="\
+    1,?,0-1,0,1,\
+    2,?,0-2,0,1,\
+    3,?,1-1,0,5,\
+    3,1863,1-1b,1,5,\
+    3,2900,1-1c,2,5,\
+    3,2791,1-1d,3,5,\
+    3,1671,1-1e,4,5,\
+    4,?,2-1,0,12,\
+    4,834,2-1b,1,12,\
+    4,3501,2-1c,2,12,\
+    4,2717,2-1d,3,12,\
+    4,4290,2-1e,4,12,\
+    4,3666,2-1f,5,12,\
+    4,4194,2-1g,6,12,\
+    4,2274,2-1h,7,12,\
+    4,860,2-1i,8,12,\
+    4,1011,2-1j,9,12,\
+    4,4340,2-1k,10,12,\
+    4,3202,2-1l,11,12,\
+    5,?,3-1,0,2,\
+    5,1867,3-1b,1,2,\
+    6,?,3-2,0,5,\
+    6,1659,3-2b,1,5,\
+    6,1828,3-2c,2,5,\
+    6,1854,3-2d,3,5,\
+    6,1858,3-2e,4,5,\
+    7,?,3-3,0,4,\
+    7,1624,3-3b,1,4,\
+    7,2162,3-3c,2,4,\
+    7,2340,3-3d,3,4,\
+    8,?,4-1,0,1",0,0
 
   -- retrieve room data
-  function get_rm_data(k)
-    local data=split(rm_data)[3*rm_index+k]
+  function get_rm_data(k,rm)
+    local data=split(rm_data)[5*(rm or rm_index)+k]
     if k==2 then return tonum(data) else return data end
   end
 
@@ -51,7 +51,7 @@ menuitem(1,"practice mod",function()
   for l=1,8 do
     level=levels[l]
     level.map,level.tiles={},{}
-    px9_decomp(0,0,0x1000+level.offset,function(x,y) return level.map[x+y*level.width] end, function(x,y,v) level.map[x+y*level.width]=v end)
+    px9_decomp(0,0,0x1000+level.offset,function(x,y) return level.map[x+y*level.width] end,function(x,y,v) level.map[x+y*level.width]=v end)
     for i=0,level.width-1 do
       for j=0,level.height-1 do
         local t=types[tile_at(i,j)]
@@ -64,30 +64,26 @@ menuitem(1,"practice mod",function()
 
   -- override goto_level to not decompress map (and stuff level intros)
   function goto_level(index)
+    music(-1) sfx(-1)
     level,level_index=levels[index],index
     if level_index==2 then psfx(17,8,16) end
-    if current_music~=level.music and level.music then
-      current_music=level.music
-      music(level.music)
-    end
     restart_level()
   end
 
   -- override restart_level (buffer window, load cached tiles)
   _restart_level=restart_level
   function restart_level()
-    level_checkpoint,buffer_time,
+    level_checkpoint,buffer_time,level_time,
     camera_x,camera_y,camera_target_x,camera_target_y,
     objects,infade,have_grapple,sfx_timer=
-    get_rm_data(2),10,
+    get_rm_data(2),10,0,
     0,0,0,0,
     {},0,level_index>2,0
-    for o in all(level.tiles) do
+    foreach(level.tiles,function(o)
       if not level_checkpoint or o[1]~=player then
         create(o[1],o[2],o[3])
       end
-    end
-    level_time=0
+    end)
   end
 
   -- override next_level (loop level)
@@ -115,11 +111,11 @@ menuitem(1,"practice mod",function()
   _player_update=player.update
   function player.update(self)
     _player_update(self)
-    for o in all(objects) do
-      if cp_mode and o.base==checkpoint and o.id~=get_rm_data(2) and self:overlaps(o) then
+    foreach(objects,function(o)
+      if o.base==checkpoint and cp_mode~=get_rm_data(4) and o.id==get_rm_data(2,rm_index-get_rm_data(4)+cp_mode) and self:overlaps(o) then
         next_level()
       end
-    end
+    end)
   end
 
   -- override update
@@ -129,7 +125,7 @@ menuitem(1,"practice mod",function()
     collected,berry_count,death_count={},0,0
     -- checkpt mode
     if btnp(2,1) then
-      cp_mode=not cp_mode
+      cp_mode=(cp_mode+1)%get_rm_data(5)
     end
     -- scroll through levels
     for i=0,1 do
@@ -162,21 +158,24 @@ menuitem(1,"practice mod",function()
     -- level title
     rectfill(2,2,18,8,0)
     ?get_rm_data(3),3,3,10
+    -- draw cp mode indicator
+    local cp_valid=cp_mode>0 and cp_mode<get_rm_data(5)
+    local cp_active=cp_valid and cp_mode~=get_rm_data(4)
+    rectfill(20,2,30,8,0)
+    rectfill(21,3,21,7,4)
+    rectfill(22,3,25,5,11)
+    ?cp_valid and chr(97+cp_mode) or "-",27,3,cp_active and 7 or 1
     -- draw frame counter
-    rectfill(20,2,36,8,0)
+    rectfill(32,2,48,8,0)
     local t=(buffer_time>0 or not level_time) and last_time or level_time
-    ?sub('000',1,4-#tostr(t)),21,3,1
-    ?t,37-4*#tostr(t),3,7
+    ?sub('000',1,4-#tostr(t)),33,3,1
+    ?t,49-4*#tostr(t),3,7
     -- draw input display
-    rectfill(38,2,59,10,0)
-    for b,x in pairs({48,56,52,52,39,43}) do
+    rectfill(50,2,71,10,0)
+    for b,x in pairs({60,68,64,64,51,55}) do
       local y=b==3 and 3 or 7
       rectfill(x,y,x+2,y+2,btn(b-1) and 7 or 1)
     end
-    -- draw cp mode indicator
-    rectfill(61,2,69,10,0)
-    rectfill(62,3,62,9,cp_mode and 4 or 1)
-    rectfill(63,3,68,6,cp_mode and 11 or 1)
     -- give cam back
     camera(camera_x,camera_y)
   end
