@@ -66,10 +66,10 @@ menuitem(1,"practice mod",function()
   function goto_level(index)
     level,level_index=levels[index],index
     if level_index==2 then psfx(17,8,16) end
-		  if current_music~=level.music and level.music then
-		    current_music=level.music
-		    music(level.music)
-		  end
+    if current_music~=level.music and level.music then
+      current_music=level.music
+      music(level.music)
+    end
     restart_level()
   end
 
@@ -165,10 +165,9 @@ menuitem(1,"practice mod",function()
     ?get_rm_data(3),3,3,10
     -- draw cp mode indicator
     local cp_valid=cp_mode>0 and cp_mode<get_rm_data(5)
-    local cp_active=cp_valid and cp_mode~=get_rm_data(4)
     rectfill(20,2,30,8,0)
     sspr(104,1,5,5,21,3)
-    ?cp_valid and chr(97+cp_mode) or "-",27,3,cp_active and 7 or 1
+    ?cp_valid and chr(97+cp_mode) or "-",27,3,cp_valid and cp_mode~=get_rm_data(4) and 7 or 1
     -- draw frame counter
     rectfill(32,2,48,8,0)
     local t=(buffer_time>0 or not level_time) and last_time or level_time
@@ -180,7 +179,7 @@ menuitem(1,"practice mod",function()
       local y=b==3 and 3 or 7
       rectfill(x,y,x+2,y+2,btn(b-1) and 7 or 1)
     end
-    -- version watermark
+    -- version indicator
     if sget(122,63)~=0 then spr(127,120,-4) end
     -- give cam back
     camera(camera_x,camera_y)
@@ -189,7 +188,6 @@ menuitem(1,"practice mod",function()
   -- reinitialize
   game_start()
   goto_level(1)
-
   -- remove menu item
   menuitem(1)
 end)
