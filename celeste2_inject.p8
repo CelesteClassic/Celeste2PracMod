@@ -64,9 +64,12 @@ menuitem(1,"practice mod",function()
 
   -- override goto_level to not decompress map (and stuff level intros)
   function goto_level(index)
-    music(-1) sfx(-1)
     level,level_index=levels[index],index
     if level_index==2 then psfx(17,8,16) end
+		  if current_music~=level.music and level.music then
+		    current_music=level.music
+		    music(level.music)
+		  end
     restart_level()
   end
 
@@ -162,8 +165,7 @@ menuitem(1,"practice mod",function()
     local cp_valid=cp_mode>0 and cp_mode<get_rm_data(5)
     local cp_active=cp_valid and cp_mode~=get_rm_data(4)
     rectfill(20,2,30,8,0)
-    rectfill(21,3,21,7,4)
-    rectfill(22,3,25,5,11)
+    sspr(104,1,5,5,21,3)
     ?cp_valid and chr(97+cp_mode) or "-",27,3,cp_active and 7 or 1
     -- draw frame counter
     rectfill(32,2,48,8,0)
