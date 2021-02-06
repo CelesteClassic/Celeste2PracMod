@@ -157,7 +157,9 @@ menuitem(1,"practice mod",function()
     -- nab camera
     camera()
     -- buffer window
-    if buffer_time>0 then cls() end
+    if buffer_time>0 then
+      cls()
+    end
     -- level title
     rectfill(2,2,18,8,0)
     ?get_rm_data(3),3,3,10
@@ -178,6 +180,8 @@ menuitem(1,"practice mod",function()
       local y=b==3 and 3 or 7
       rectfill(x,y,x+2,y+2,btn(b-1) and 7 or 1)
     end
+    -- version watermark
+    if sget(122,63)~=0 then spr(127,120,-4) end
     -- give cam back
     camera(camera_x,camera_y)
   end
